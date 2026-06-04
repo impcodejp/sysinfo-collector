@@ -1,0 +1,15 @@
+/target
+
+# 収集結果ファイル
+sysinfo_*.txt
+
+# エディタ・IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+claude.md
+
+# OS
+Thumbs.db
+Desktop.ini

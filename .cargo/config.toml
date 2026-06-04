@@ -1,0 +1,3 @@
+[target.x86_64-pc-windows-msvc]
+# MSVCランタイム(vcruntime*.dll)を静的リンクし、配布先にランタイム不要にする
+rustflags = ["-C", "target-feature=+crt-static"]
