@@ -1,4 +1,4 @@
-use crate::model::{DriveInfo, HardwareInfo, NetworkInfo, OsInfo, SystemInfo, TaskInfo};
+use crate::model::{DomainInfo, DriveInfo, HardwareInfo, NetworkInfo, OsInfo, SystemInfo, TaskInfo};
 use crate::model::windows_features::WindowsFeaturesInfo;
 
 const SEPARATOR: &str = "================================================================";
@@ -12,6 +12,7 @@ impl TextFormatter {
 
         write_header(&mut out, info);
         write_os_section(&mut out, &info.os);
+        write_domain_section(&mut out, &info.domain);
         write_network_section(&mut out, &info.network);
         write_hardware_section(&mut out, &info.hardware);
         write_drive_section(&mut out, &info.drives);
@@ -42,6 +43,24 @@ fn write_os_section(out: &mut String, os: &Result<OsInfo, String>) {
             out.push_str(&format!("  ビルド番号  : {}\n", o.build_number));
             out.push_str(&format!("  インストール: {}\n", o.install_date));
             out.push_str(&format!("  起動日時   : {} (稼働 {})\n", o.last_boot_time, o.uptime));
+        }
+        Err(e) => {
+            out.push_str(&format!("  取得失敗: {}\n", e));
+        }
+    }
+    out.push('\n');
+}
+
+fn write_domain_section(out: &mut String, domain: &Result<DomainInfo, String>) {
+    out.push_str("[ドメイン / ワークグループ情報]\n");
+    match domain {
+        Ok(d) => {
+            out.push_str(&format!("  名称     : {}\n", d.name));
+            out.push_str(&format!("  ロール   : {}\n", d.role.label()));
+            out.push_str(&format!(
+                "  ドメイン参加: {}\n",
+                if d.is_domain_joined() { "はい" } else { "いいえ" }
+            ));
         }
         Err(e) => {
             out.push_str(&format!("  取得失敗: {}\n", e));
@@ -299,7 +318,7 @@ fn format_bytes(bytes: u64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::{AdapterInfo, DriveInfo, HardwareInfo, NetworkInfo, OsInfo, SystemInfo, TaskInfo};
+    use crate::model::{AdapterInfo, DomainInfo, DomainRole, DriveInfo, HardwareInfo, NetworkInfo, OsInfo, SystemInfo, TaskInfo};
 
     fn make_test_info() -> SystemInfo {
         let mut info = SystemInfo::new("2025-06-04 14:30:22".to_string());
@@ -424,5 +443,40 @@ mod tests {
         info.tasks = Ok(vec![]);
         let text = TextFormatter::format(&info);
         assert!(text.contains("ユーザー定義タスクはありません"));
+    }
+
+    #[test]
+    fn test_format_domain_standalone() {
+        let mut info = SystemInfo::new("2025-06-04 00:00:00".to_string());
+        info.domain = Ok(DomainInfo {
+            name: "WORKGROUP".to_string(),
+            role: DomainRole::StandaloneServer,
+        });
+        let text = TextFormatter::format(&info);
+        assert!(text.contains("WORKGROUP"));
+        assert!(text.contains("ワークグループ（サーバー）"));
+        assert!(text.contains("いいえ"));
+    }
+
+    #[test]
+    fn test_format_domain_joined() {
+        let mut info = SystemInfo::new("2025-06-04 00:00:00".to_string());
+        info.domain = Ok(DomainInfo {
+            name: "example.local".to_string(),
+            role: DomainRole::MemberServer,
+        });
+        let text = TextFormatter::format(&info);
+        assert!(text.contains("example.local"));
+        assert!(text.contains("ドメインメンバー（サーバー）"));
+        assert!(text.contains("はい"));
+    }
+
+    #[test]
+    fn test_format_domain_error() {
+        let mut info = SystemInfo::new("2025-06-04 00:00:00".to_string());
+        info.domain = Err("WMI接続失敗".to_string());
+        let text = TextFormatter::format(&info);
+        assert!(text.contains("[ドメイン / ワークグループ情報]"));
+        assert!(text.contains("取得失敗"));
     }
 }

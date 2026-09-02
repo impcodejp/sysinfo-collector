@@ -53,6 +53,11 @@ fn run() -> Result<()> {
     info.windows_features = collector::collect_windows_features().map_err(|e| e.to_string());
     println!(" 完了");
 
+    print!("[収集中] ドメイン / ワークグループ情報 ...");
+    std::io::Write::flush(&mut std::io::stdout())?;
+    info.domain = collector::collect_domain().map_err(|e| e.to_string());
+    println!(" 完了");
+
     print!("[収集中] タスクスケジューラ情報 ...");
     std::io::Write::flush(&mut std::io::stdout())?;
     info.tasks = collector::collect_tasks().map_err(|e| e.to_string());

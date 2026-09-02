@@ -1,4 +1,4 @@
-use super::{DriveInfo, HardwareInfo, NetworkInfo, OsInfo, TaskInfo, WindowsFeaturesInfo};
+use super::{DomainInfo, DriveInfo, HardwareInfo, NetworkInfo, OsInfo, TaskInfo, WindowsFeaturesInfo};
 
 pub type CollectResult<T> = Result<T, String>;
 
@@ -11,6 +11,7 @@ pub struct SystemInfo {
     pub drives: CollectResult<Vec<DriveInfo>>,
     pub windows_features: CollectResult<WindowsFeaturesInfo>,
     pub tasks: CollectResult<Vec<TaskInfo>>,
+    pub domain: CollectResult<DomainInfo>,
 }
 
 impl SystemInfo {
@@ -23,6 +24,7 @@ impl SystemInfo {
             drives: Err("未収集".to_string()),
             windows_features: Err("未収集".to_string()),
             tasks: Err("未収集".to_string()),
+            domain: Err("未収集".to_string()),
         }
     }
 
